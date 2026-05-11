@@ -187,3 +187,12 @@ class SeedResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
+
+
+class BriefingResponse(BaseModel):
+    briefing: str
+    data: dict
+
+
+class TaskStatusUpdate(BaseModel):
+    status: str
