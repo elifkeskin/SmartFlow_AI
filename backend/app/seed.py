@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -346,7 +346,7 @@ def run_seed(db: Session) -> dict[str, int]:
         db.add(Product(**data))
     db.commit()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     for data in ORDERS:
         db.add(Order(**data, created_at=now))
     db.commit()
