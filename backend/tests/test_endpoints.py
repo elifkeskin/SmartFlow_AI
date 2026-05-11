@@ -87,3 +87,10 @@ def test_dashboard_summary(client):
     assert s["delayed_orders"] == 1
     assert s["critical_stock_products"] == 2
     assert s["pending_tasks"] == 2
+
+
+def test_list_messages_empty(client):
+    client.post("/api/seed")
+    r = client.get("/api/messages")
+    assert r.status_code == 200
+    assert r.json() == []

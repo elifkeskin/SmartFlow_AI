@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -31,7 +31,7 @@ class Order(Base):
     status: Mapped[str] = mapped_column(String, default="Hazırlanıyor")
     cargo_status: Mapped[str] = mapped_column(String, default="Zamanında")
     estimated_delivery: Mapped[str] = mapped_column(String, default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     product: Mapped["Product"] = relationship("Product", back_populates="orders")
     shipment: Mapped["Shipment"] = relationship("Shipment", back_populates="order", uselist=False)
@@ -72,4 +72,4 @@ class Message(Base):
     ai_response: Mapped[str] = mapped_column(Text, default="")
     intent: Mapped[str] = mapped_column(String, default="GENERAL")
     status: Mapped[str] = mapped_column(String, default="Gönderildi")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
