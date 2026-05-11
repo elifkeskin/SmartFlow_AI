@@ -192,6 +192,8 @@ class HealthResponse(BaseModel):
 class BriefingResponse(BaseModel):
     briefing: str
     data: dict
+    ai_summary: str | None = None
+    tool_calls: list[str] = []
 
 
 class TaskStatusUpdate(BaseModel):

@@ -25,7 +25,7 @@ export const updateTaskStatus = (id, status) =>
   apiFetch('PATCH', `/api/tasks/${id}`, { status });
 
 export const generateBriefing = () =>
-  apiFetch('POST', '/api/ai/tasks/generate', {});
+  apiFetch('POST', '/api/tasks/generate', {});
 
 export const sendAlert = (payload) =>
   apiFetch('POST', '/api/alerts/send', payload);
