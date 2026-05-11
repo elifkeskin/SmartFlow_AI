@@ -1,4 +1,3 @@
-import json
 import google.generativeai as genai
 from sqlalchemy.orm import Session
 
@@ -18,8 +17,6 @@ Müşteri mesajlarını Türkçe olarak anlayıp cevapla.
 ASLA tahmin yürütme — önce ilgili tool'u çağır, gelen veriye göre cevap ver.
 Cevapların kısa, nazik ve profesyonel olsun."""
 
-# Tool adı → Python fonksiyonu eşleştirmesi
-# DB gerektiren fonksiyonlar için db'yi closure'dan inject edeceğiz
 TOOL_MAP = {
     "get_order_status": get_order_status,
     "get_product_info": get_product_info,
@@ -30,13 +27,13 @@ TOOL_MAP = {
     "send_manager_alert": send_manager_alert,
 }
 
-DB_TOOLS = {  # DB Session gerektiren tool'lar
+DB_TOOLS = {
     "get_order_status", "get_product_info", "get_cargo_status",
     "check_stock_alerts", "draft_supplier_email", "generate_daily_briefing"
 }
 
 
-def process_chat(message: str, db: Session) -> dict:
+def _process_chat_real(message: str, db: Session) -> dict:
     model = genai.GenerativeModel(
         model_name="gemini-1.5-flash",
         system_instruction=SYSTEM_PROMPT,
@@ -45,36 +42,30 @@ def process_chat(message: str, db: Session) -> dict:
 
     tool_calls_used = []
     dashboard_notes = []
-    
-    # İlk istek
+
     response = model.generate_content(message)
-    
-    # Tool calling döngüsü (max 3 tur)
+
     for _ in range(3):
         part = response.candidates[0].content.parts[0]
-        
+
         if not hasattr(part, "function_call") or not part.function_call.name:
-            # Gemini düz cevap verdi, döngüden çık
             break
-        
+
         fn_name = part.function_call.name
         fn_args = dict(part.function_call.args)
         tool_calls_used.append(fn_name)
-   
-      # Python fonksiyonunu çağır
+
         fn = TOOL_MAP[fn_name]
         if fn_name in DB_TOOLS:
             fn_result = fn(db, **fn_args)
         else:
             fn_result = fn(**fn_args)
-        
-        # Gecikme tespiti → dashboard notu
+
         if fn_name in ("get_order_status", "get_cargo_status"):
             if fn_result.get("delay_days", 0) > 0:
                 oid = fn_args.get("order_id")
                 dashboard_notes.append(f"{oid} numaralı sipariş için gecikme uyarısı oluşturuldu.")
 
-        # Sonucu Gemini'ye geri gönder
         response = model.generate_content([
             {"role": "user", "parts": [message]},
             {"role": "model", "parts": [part]},
@@ -88,16 +79,12 @@ def process_chat(message: str, db: Session) -> dict:
                 }]
             }
         ])
-    
-    # Final metin cevabı
+
     final_text = response.candidates[0].content.parts[0].text
 
-    # Intent'i basitçe tespit et (Gemini'den ayrı, hızlı kural bazlı)
     intent = _detect_intent(message, tool_calls_used)
     entities = _extract_entities(message)
 
-
-    # Mesajı DB'ye kaydet
     crud.create_message(db, customer_message=message, ai_response=final_text, intent=intent)
 
     return {
@@ -107,7 +94,6 @@ def process_chat(message: str, db: Session) -> dict:
         "tool_calls": tool_calls_used,
         "dashboard_note": "; ".join(dashboard_notes) if dashboard_notes else "",
     }
-
 
 
 def _detect_intent(message: str, tool_calls: list[str]) -> str:
@@ -121,7 +107,6 @@ def _detect_intent(message: str, tool_calls: list[str]) -> str:
         return "STOCK_ALERT"
     if "generate_daily_briefing" in tool_calls:
         return "DAILY_BRIEFING"
-    # Fallback: keyword
     msg = message.lower()
     if any(w in msg for w in ["sipariş", "nerede", "geldi mi"]):
         return "ORDER_STATUS"
@@ -137,7 +122,7 @@ def _detect_intent(message: str, tool_calls: list[str]) -> str:
 def _extract_entities(message: str) -> dict:
     import re
     entities = {}
-    match = re.search(r'\b(\d{3,})\b', message)  # 3+ haneli sayı = order_id
+    match = re.search(r'\b(\d{3,})\b', message)
     if match:
         entities["order_id"] = int(match.group(1))
     return entities
@@ -150,6 +135,7 @@ MOCK_RESPONSES = {
     "DAILY_BRIEFING": "Bugün 12 sipariş var. 1 kargo gecikmiş, 2 ürün kritik stokta.",
     "GENERAL": "Merhaba! Nasıl yardımcı olabilirim?",
 }
+
 
 def process_chat(message: str, db: Session) -> dict:
     try:

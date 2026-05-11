@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
-from app import 
+from app import crud
 import google.generativeai as genai
+
 
 def get_order_status(db: Session, order_id: int) -> dict:
     order, shipment = crud.get_order_with_shipment(db, order_id)
@@ -37,7 +38,6 @@ def get_product_info(db: Session, product_name: str) -> dict:
 
 
 def get_cargo_status(db: Session, order_id: int) -> dict:
-    # get_order_status ile örtüşüyor, ama kargo odaklı
     shipment = crud.get_shipment_by_order(db, order_id)
     if not shipment:
         return {"error": f"Kargo kaydı bulunamadı: {order_id}"}
@@ -100,14 +100,19 @@ def generate_daily_briefing(db: Session) -> dict:
         "summary": summary.dict(),
         "delayed_orders": [{"order_id": o.order_id, "customer_name": o.customer_name} for o in delayed],
         "critical_products": [{"product_name": p.product_name, "stock_count": p.stock_count} for p in critical],
-        "pending_tasks": [{"task_id": t.task_id, "description": t.description, "priority": t.priority} for t in tasks if t.status == "Bekliyor"],
+        "pending_tasks": [
+            {"task_id": t.task_id, "description": t.description, "priority": t.priority}
+            for t in tasks if t.status == "Bekliyor"
+        ],
     }
 
 
-
 def send_manager_alert(order_id: int, message: str) -> dict:
-    # Bu fonksiyon email_service'i çağırır, DB'ye ihtiyaç yok
-    return {"queued": True, "order_id": order_id, "message": message}
+    from app.email_service import send_manager_alert_email
+    subject = f"Yönetici Uyarısı — Sipariş #{order_id}"
+    body = f"Sipariş #{order_id} için uyarı:\n\n{message}"
+    sent = send_manager_alert_email(subject, body)
+    return {"sent": sent, "order_id": order_id}
 
 
 TOOL_DECLARATIONS = [
@@ -127,39 +132,23 @@ TOOL_DECLARATIONS = [
                     required=["order_id"]
                 )
             ),
-        ]
-    )
-]
-
-
-TOOL_DECLARATIONS = [
-    genai.protos.Tool(
-        function_declarations=[
             genai.protos.FunctionDeclaration(
                 name="get_product_info",
                 description="Verilen ürün adının stok bilgisini getirir.",
                 parameters=genai.protos.Schema(
                     type=genai.protos.Type.OBJECT,
                     properties={
-                        "product_id": genai.protos.Schema(
-                            type=genai.protos.Type.INTEGER,
-                            description="Ürün numarası"
+                        "product_name": genai.protos.Schema(
+                            type=genai.protos.Type.STRING,
+                            description="Ürün adı (kısmi eşleşme desteklenir)"
                         )
                     },
-                    required=["Product_id"]
+                    required=["product_name"]
                 )
             ),
-        ]
-    )
-]
-
-
-TOOL_DECLARATIONS = [
-    genai.protos.Tool(
-        function_declarations=[
             genai.protos.FunctionDeclaration(
                 name="get_cargo_status",
-                description="Verilen sipariş numarasının kargo durumunu getirir.",
+                description="Verilen sipariş numarasının kargo durumunu ve takip bilgisini getirir.",
                 parameters=genai.protos.Schema(
                     type=genai.protos.Type.OBJECT,
                     properties={
@@ -171,79 +160,36 @@ TOOL_DECLARATIONS = [
                     required=["order_id"]
                 )
             ),
-        ]
-    )
-]
-
-
-TOOL_DECLARATIONS = [
-    genai.protos.Tool(
-        function_declarations=[
             genai.protos.FunctionDeclaration(
                 name="check_stock_alerts",
-                description="Kritik stokları listeler.",
+                description="Kritik stok seviyesine düşmüş tüm ürünleri listeler.",
                 parameters=genai.protos.Schema(
                     type=genai.protos.Type.OBJECT,
-                    properties={
-                        "product_id": genai.protos.Schema(
-                            type=genai.protos.Type.INTEGER,
-                            description="Ürün numarası" 
-                        )
-                    },
-                    required=["product_id"]
+                    properties={}
                 )
             ),
-        ]
-    )
-]
-
-TOOL_DECLARATIONS = [
-    genai.protos.Tool(
-        function_declarations=[
             genai.protos.FunctionDeclaration(
                 name="draft_supplier_email",
-                description="Verilen ürün numarasının tedarikçi e-posta taslağını oluşturur.",
+                description="Verilen ürün ID'si için tedarikçiye gönderilecek e-posta taslağını oluşturur.",
                 parameters=genai.protos.Schema(
                     type=genai.protos.Type.OBJECT,
                     properties={
                         "product_id": genai.protos.Schema(
-                            type=genai.protos.Type.INTEGER,
-                            description="Ürün numarası"
+                            type=genai.protos.Type.STRING,
+                            description="Ürün ID'si (örn: P002)"
                         )
                     },
                     required=["product_id"]
                 )
             ),
-        ]
-    )
-]
-
-
-TOOL_DECLARATIONS = [
-    genai.protos.Tool(
-        function_declarations=[
             genai.protos.FunctionDeclaration(
                 name="generate_daily_briefing",
-                description="Günlük operasyon görevlerini özetler.",
+                description="Günlük operasyon özetini oluşturur: gecikmiş siparişler, kritik stoklar, bekleyen görevler.",
                 parameters=genai.protos.Schema(
                     type=genai.protos.Type.OBJECT,
-                    properties={
-                        "product_id": genai.protos.Schema(
-                            type=genai.protos.Type.INTEGER,
-                            description="Ürün numarası"
-                        )
-                    },
-                    required=["product_id"]
+                    properties={}
                 )
             ),
-        ]
-    )
-]
-
-
-TOOL_DECLARATIONS = [
-    genai.protos.Tool(
-        function_declarations=[
             genai.protos.FunctionDeclaration(
                 name="send_manager_alert",
                 description="Yöneticiye e-posta uyarısı gönderir.",
@@ -252,10 +198,14 @@ TOOL_DECLARATIONS = [
                     properties={
                         "order_id": genai.protos.Schema(
                             type=genai.protos.Type.INTEGER,
-                            description="Sipariş numarası"
+                            description="İlgili sipariş numarası"
+                        ),
+                        "message": genai.protos.Schema(
+                            type=genai.protos.Type.STRING,
+                            description="Uyarı mesajı"
                         )
                     },
-                    required=["order_id"]
+                    required=["order_id", "message"]
                 )
             ),
         ]
