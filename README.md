@@ -2,9 +2,14 @@
 
 KOBİ ve üretici kooperatifleri için FastAPI + Gemini tabanlı, tool/function calling kullanan yapay zeka operasyon asistanı.
 
+<img width="1067" height="422" alt="SmartFlow_AI" src="https://github.com/user-attachments/assets/17980c50-805b-48a5-9324-b150ed1538e2" />
+
 ## Problem Tanımı
 
 Küçük işletmeler müşteri mesajlarını, sipariş durumlarını, kargo takibini, stok uyarılarını ve günlük görevleri çoğu zaman ayrı araçlarla ve manuel olarak yönetir. Bu durum geciken cevaplara, stok tükenmelerinin geç fark edilmesine, kargo gecikmelerinin müşteriden önce görülememesine ve operasyonel verimsizliğe yol açar.
+
+<img width="1013" height="346" alt="SmartflowAI2" src="https://github.com/user-attachments/assets/a506c8bd-a137-4965-b0e7-3503fabe3a89" />
+
 
 ## Çözüm Özeti
 
@@ -162,3 +167,6 @@ cd backend
 - Kullanıcı yetkilendirme
 - Rate limiting
 - Production deployment
+
+  <img width="1013" height="346" alt="SmartflowAI2" src="https://github.com/user-attachments/assets/3c54e1ce-7b3d-4d50-b713-b89536176858" />
+
