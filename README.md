@@ -34,10 +34,10 @@ copy backend\.env.example backend\.env
 docker compose up --build
 ```
 
-Uygulama: http://localhost
+Uygulama: http://localhost:8080
 
-- Frontend (Nginx): http://localhost
-- Backend API: http://localhost/api
+- Frontend (Nginx): http://localhost:8080
+- Backend API: http://localhost:8080/api
 - Swagger UI: http://127.0.0.1:8000/docs (backend container'ını ayrıca expose etmek için `docker compose up` sırasında port eklenebilir)
 
 Durdurmak için:
