@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 # ---------------------------------------------------------------------------
@@ -150,7 +150,15 @@ class MessageRead(MessageBase):
 # ---------------------------------------------------------------------------
 
 class ChatRequest(BaseModel):
-    message: str
+    message: str = Field(..., min_length=1)
+
+    @field_validator("message")
+    @classmethod
+    def message_must_not_be_blank(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Message must not be blank")
+        return value
 
 
 class ChatResponse(BaseModel):
@@ -198,3 +206,11 @@ class BriefingResponse(BaseModel):
 
 class TaskStatusUpdate(BaseModel):
     status: str
+
+    @field_validator("status")
+    @classmethod
+    def status_must_be_supported(cls, value: str) -> str:
+        allowed = {"Bekliyor", "Onay bekliyor", "Onay Bekliyor", "Tamamlandı"}
+        if value not in allowed:
+            raise ValueError(f"Unsupported task status: {value}")
+        return value
