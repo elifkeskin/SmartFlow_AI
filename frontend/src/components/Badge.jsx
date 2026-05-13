@@ -23,6 +23,7 @@ const STATUS_COLOR = {
   'Bekliyor': 'gray',
   'Devam Ediyor': 'blue',
   'Onay Bekliyor': 'purple',
+  'Onay bekliyor': 'purple',
   'Tamamlandı': 'green',
   'İptal': 'gray',
 };

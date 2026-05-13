@@ -29,6 +29,8 @@ function DashNotes() {
   );
 }
 
+const isPendingApproval = (task) => task.status?.toLocaleLowerCase('tr') === 'onay bekliyor';
+
 export default function DashboardPage() {
   const { summary, tasks, orders, products, shipments, loading, refresh } = useApiData();
   const showToast = useToast();
@@ -46,7 +48,7 @@ export default function DashboardPage() {
     if (!summary) return;
     const late = orders.filter(o => o.cargo_status === 'Gecikmiş').length;
     const crit = products.filter(p => p.stock_count <= p.critical_threshold).length;
-    const pend = localTasks.filter(t => t.status === 'Onay Bekliyor').length;
+    const pend = localTasks.filter(isPendingApproval).length;
     setNavBadge({ late, crit, pend });
   }, [summary, orders, products, localTasks, setNavBadge]);
 
@@ -82,8 +84,9 @@ export default function DashboardPage() {
 
   const lateOrders = orders.filter(o => o.cargo_status === 'Gecikmiş');
   const critProds = products.filter(p => p.stock_count <= p.critical_threshold);
-  const pendTasks = localTasks.filter(t => t.status === 'Onay Bekliyor');
+  const pendTasks = localTasks.filter(isPendingApproval);
   const pend = pendTasks.length;
+  const shipmentByOrder = new Map(shipments.map(s => [s.order_id, s]));
 
   const typeIc = { Stok: '⚡', Kargo: '🚚', 'Müşteri Bilgilendirme': '📣', Paketleme: '📦' };
 
@@ -153,7 +156,7 @@ export default function DashboardPage() {
         {briefLoading ? (
           <div className="brief-body loading">
             <div className="spinner" />
-            <span>POST /api/ai/tasks/generate çağrılıyor…</span>
+            <span>POST /api/tasks/generate çağrılıyor…</span>
           </div>
         ) : (
           <div className="brief-body">
@@ -164,7 +167,7 @@ export default function DashboardPage() {
         )}
         {briefing && !briefLoading && (
           <div className="bftr">
-            <span className="bftr-meta">Son güncelleme: {new Date().toLocaleTimeString('tr')} · POST /api/ai/tasks/generate</span>
+            <span className="bftr-meta">Son güncelleme: {new Date().toLocaleTimeString('tr')} · POST /api/tasks/generate</span>
             <div className="tool-tags">
               {['get_order_status', 'check_stock_alerts', 'generate_daily_briefing'].map(t => (
                 <span key={t} className="chip chip-purple">{t}</span>
@@ -183,21 +186,24 @@ export default function DashboardPage() {
           <div className="alert-panel">
             {lateOrders.length === 0
               ? <div className="empty">✅ Gecikmiş sipariş yok</div>
-              : lateOrders.map(o => (
-                  <div key={o.order_id} className="ai-row">
-                    <span className="ai-ic">🔴</span>
-                    <div className="ai-bd">
-                      <div className="ai-t">#{o.order_id} — {o.customer_name}</div>
-                      <div className="ai-m">Adet: {o.quantity} · ETA: {o.estimated_delivery} · <span style={{ color: 'var(--red)' }}>{o.delay_days} gün gecikmiş</span></div>
+              : lateOrders.map(o => {
+                  const shipment = shipmentByOrder.get(o.order_id);
+                  return (
+                    <div key={o.order_id} className="ai-row">
+                      <span className="ai-ic">🔴</span>
+                      <div className="ai-bd">
+                        <div className="ai-t">#{o.order_id} — {o.customer_name}</div>
+                        <div className="ai-m">Adet: {o.quantity} · ETA: {shipment?.estimated_delivery || o.estimated_delivery} · <span style={{ color: 'var(--red)' }}>{shipment?.delay_days || 0} gün gecikmiş</span></div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <Badge label="Gecikmiş" />
+                        <button className="btn btn-ghost btn-sm" onClick={() => pushDashNote(`📦 #${o.order_id} — ${o.customer_name} için bilgilendirme aksiyonu oluşturuldu`)}>
+                          Aksiyon
+                        </button>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                      <Badge label="Gecikmiş" />
-                      <button className="btn btn-ghost btn-sm" onClick={() => pushDashNote(`📦 #${o.order_id} — ${o.customer_name} için bilgilendirme aksiyonu oluşturuldu`)}>
-                        Aksiyon
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
           </div>
         </div>
         <div>

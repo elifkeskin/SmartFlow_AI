@@ -516,7 +516,7 @@ tbody td{padding:10px 15px;vertical-align:middle}
           <option value="">Tüm Durumlar</option>
           <option value="Bekliyor">Bekliyor</option>
           <option value="Devam Ediyor">Devam Ediyor</option>
-          <option value="Onay Bekliyor">Onay Bekliyor</option>
+          <option value="Onay bekliyor">Onay bekliyor</option>
           <option value="Tamamlandı">Tamamlandı</option>
         </select>
         <select id="task-filter-type" onchange="renderTasksPage()">
@@ -661,6 +661,8 @@ const MOCK = {
 let ST = {summary:null,tasks:[],orders:[],products:[],shipments:[]};
 let chartInst = null;
 let currentPage = 'dashboard';
+const isPendingApproval = (task) => (task.status || '').toLocaleLowerCase('tr') === 'onay bekliyor';
+const shipmentForOrder = (orderId) => ST.shipments.find(s => s.order_id === orderId) || {};
 
 /* ════════ API HELPER ════════ */
 async function apiFetch(method,url,body){
@@ -739,7 +741,7 @@ function renderSummary(){
   set('s-del',s.delivered_orders.toLocaleString('tr'));
   set('s-late',s.delayed_orders);
   set('s-crit',s.critical_stock_products);
-  const pend=ST.tasks.filter(t=>t.status==='Onay Bekliyor').length;
+  const pend=ST.tasks.filter(isPendingApproval).length;
   set('s-pend',pend);
   set('sd-total',`${s.total_orders} sipariş`);
   set('sd-prep',`${s.preparing_orders} aktif`);
@@ -758,18 +760,21 @@ function renderDashboardWidgets(){
   const lp = document.getElementById('latePanel');
   lp.innerHTML = !late.length
     ? '<div class="empty">✅ Gecikmiş sipariş yok</div>'
-    : late.map(o=>`
+    : late.map(o=>{
+        const shipment = shipmentForOrder(o.order_id);
+        return `
         <div class="ai-row">
           <span class="ai-ic">🔴</span>
           <div class="ai-bd">
             <div class="ai-t">#${o.order_id} — ${o.customer_name}</div>
-            <div class="ai-m">Adet: ${o.quantity} · ETA: ${o.estimated_delivery} · <span style="color:var(--red)">${o.delay_days} gün gecikmiş</span></div>
+            <div class="ai-m">Adet: ${o.quantity} · ETA: ${shipment.estimated_delivery || o.estimated_delivery} · <span style="color:var(--red)">${shipment.delay_days || 0} gün gecikmiş</span></div>
           </div>
           <div style="display:flex;gap:6px;align-items:center">
             <span class="badge b-red"><span class="bd"></span>Gecikmiş</span>
             <button class="btn btn-ghost btn-sm" onclick="pushDashNote('📦 #${o.order_id} — ${o.customer_name} için bilgilendirme aksiyonu oluşturuldu')">Aksiyon</button>
           </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
 
   // Critical stock widget
   const crit = ST.products.filter(p=>p.stock_count<=p.critical_threshold);
@@ -812,7 +817,7 @@ function renderDashboardWidgets(){
 
 /* ════════ PENDING WIDGETS ════════ */
 function renderPendingWidgets(){
-  const pend = ST.tasks.filter(t=>t.status==='Onay Bekliyor');
+  const pend = ST.tasks.filter(isPendingApproval);
   const cnt = pend.length;
   document.getElementById('pendCount').textContent = cnt;
   document.getElementById('s-pend').textContent = cnt;
@@ -958,11 +963,11 @@ function renderTasksPage(){
   const fs = document.getElementById('task-filter-status').value;
   const ft = document.getElementById('task-filter-type').value;
   const fp = document.getElementById('task-filter-pri').value;
-  let rows = ST.tasks.filter(t=>(!fs||t.status===fs)&&(!ft||t.task_type===ft)&&(!fp||t.priority===fp));
+  let rows = ST.tasks.filter(t=>(!fs||(t.status || '').toLocaleLowerCase('tr')===fs.toLocaleLowerCase('tr'))&&(!ft||t.task_type===ft)&&(!fp||t.priority===fp));
   document.getElementById('task-count').textContent = rows.length;
 
   const priCls={'Kritik':'pri-K','Yüksek':'pri-Y','Orta':'pri-O','Düşük':'pri-D'};
-  const sCls={'Devam Ediyor':'b-blue','Bekliyor':'b-yellow','Onay Bekliyor':'b-purple','Tamamlandı':'b-green','İptal':'b-gray'};
+  const sCls={'Devam Ediyor':'b-blue','Bekliyor':'b-yellow','Onay Bekliyor':'b-purple','Onay bekliyor':'b-purple','Tamamlandı':'b-green','İptal':'b-gray'};
   const tCls={'Müşteri Bilgilendirme':'b-red','Paketleme':'b-cyan','Stok':'b-orange','Kargo':'b-blue'};
 
   const tb = document.getElementById('tasksTable');
@@ -977,7 +982,7 @@ function renderTasksPage(){
           <td><span class="pri ${priCls[t.priority]||'pri-D'}">${t.priority}</span></td>
           <td><span class="badge ${sCls[t.status]||'b-gray'}"><span class="bd"></span>${t.status}</span></td>
           <td>
-            ${t.status==='Onay Bekliyor'
+            ${isPendingApproval(t)
               ?`<button class="btn btn-purple btn-sm" onclick="approveTask(${t.task_id})">✓ Onayla</button>`
               :`<button class="btn btn-ghost btn-sm" onclick="showToast('Görev #${t.task_id} detayı','info')">→</button>`}
           </td>
@@ -986,7 +991,7 @@ function renderTasksPage(){
 
 /* ════════ PAGE: PENDING ════════ */
 function renderPendingPage(){
-  const pend = ST.tasks.filter(t=>t.status==='Onay Bekliyor');
+  const pend = ST.tasks.filter(isPendingApproval);
   document.getElementById('pend-page-count').textContent = pend.length;
   const typeIc={'Stok':'⚡','Kargo':'🚚','Müşteri Bilgilendirme':'📣','Paketleme':'📦'};
   const priCls={'Kritik':'pri-K','Yüksek':'pri-Y','Orta':'pri-O','Düşük':'pri-D'};
@@ -1036,7 +1041,7 @@ function rejectTask(id){
 }
 
 function approveAll(){
-  ST.tasks.filter(t=>t.status==='Onay Bekliyor').forEach(t=>t.status='Tamamlandı');
+  ST.tasks.filter(isPendingApproval).forEach(t=>t.status='Tamamlandı');
   ST.summary.pending_tasks=0;
   renderSummary();
   renderPendingWidgets();
@@ -1051,7 +1056,7 @@ function approveAll(){
 function updateNavBadges(){
   const late=ST.orders.filter(o=>o.cargo_status==='Gecikmiş').length;
   const crit=ST.products.filter(p=>p.stock_count<=p.critical_threshold).length;
-  const pend=ST.tasks.filter(t=>t.status==='Onay Bekliyor').length;
+  const pend=ST.tasks.filter(isPendingApproval).length;
   document.getElementById('nb-late').textContent=late;
   document.getElementById('nb-crit').textContent=crit;
   document.getElementById('nb-pend').textContent=pend;
@@ -1067,7 +1072,7 @@ async function loadBriefing(manual=false){
   document.getElementById('briefFtr').style.display='none';
 
   const data=await apiFetch('POST','/api/tasks/generate',{});
-  const txt  = (data&&data.ai_summary) ? data.ai_summary : (ST.summary?.ai_summary||MOCK.generate.ai_summary);
+  const txt  = data ? (data.ai_summary || data.briefing) : (ST.summary?.ai_summary || MOCK.generate.ai_summary);
   const tools= (data&&data.tool_calls) ? data.tool_calls : MOCK.generate.tool_calls;
 
   el.className='brief-body';
@@ -1095,15 +1100,15 @@ window.pushDashNote=pushDashNote;
 async function sendManagerAlert(e){
   const btn=e.currentTarget; btn.disabled=true;
   showToast('🔔 POST /api/alerts/send…','info');
+  const delayed = ST.orders.filter(o=>o.cargo_status==='Gecikmiş').length;
+  const critical = ST.products.filter(p=>p.stock_count<=p.critical_threshold).length;
+  const pending = ST.tasks.filter(isPendingApproval).length;
   const res=await apiFetch('POST','/api/alerts/send',{
-    type:'manager_alert',timestamp:new Date().toISOString(),
-    delayed_orders:ST.orders.filter(o=>o.cargo_status==='Gecikmiş').length,
-    critical_stock:ST.products.filter(p=>p.stock_count<=p.critical_threshold).length,
-    pending_tasks:ST.tasks.filter(t=>t.status==='Onay Bekliyor').length,
-    summary:ST.summary
+    subject:'SmartFlow AI — Yönetici Uyarısı',
+    body:`Acil durum bildirimi:\n- Gecikmiş sipariş: ${delayed}\n- Kritik stok: ${critical}\n- Onay bekleyen: ${pending}`
   });
   setTimeout(()=>{
-    showToast(res&&res.success?'✅ Uyarı gönderildi — Resend API':'✅ Uyarı gönderildi (Demo)','success');
+    showToast(res&&res.sent?'✅ Uyarı gönderildi — Resend API':'✅ Uyarı gönderildi (Demo)','success');
     pushDashNote('📧 Yönetici uyarısı gönderildi — POST /api/alerts/send');
   },res?0:600);
   btn.disabled=false;

@@ -97,7 +97,7 @@ def generate_daily_briefing(db: Session) -> dict:
     critical = c.get_critical_stock_products(db)
     tasks = c.get_tasks(db)
     return {
-        "summary": summary.dict(),
+        "summary": summary.model_dump(),
         "delayed_orders": [{"order_id": o.order_id, "customer_name": o.customer_name} for o in delayed],
         "critical_products": [{"product_name": p.product_name, "stock_count": p.stock_count} for p in critical],
         "pending_tasks": [

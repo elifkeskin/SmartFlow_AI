@@ -6,6 +6,7 @@ import { useToast, useDashNote } from '../components/Layout.jsx';
 import { updateTaskStatus } from '../api/client.js';
 
 const TYPE_IC = { Stok: '⚡', Kargo: '🚚', 'Müşteri Bilgilendirme': '📣', Paketleme: '📦' };
+const isPendingApproval = (task) => task.status?.toLocaleLowerCase('tr') === 'onay bekliyor';
 
 export default function PendingPage() {
   const { tasks } = useApiData();
@@ -15,7 +16,7 @@ export default function PendingPage() {
 
   useEffect(() => { setLocalTasks(tasks); }, [tasks]);
 
-  const pending = localTasks.filter(t => t.status === 'Onay Bekliyor');
+  const pending = localTasks.filter(isPendingApproval);
 
   async function handleApprove(taskId) {
     const res = await updateTaskStatus(taskId, 'Tamamlandı');
@@ -37,7 +38,7 @@ export default function PendingPage() {
 
   async function handleApproveAll() {
     await Promise.all(pending.map(t => updateTaskStatus(t.task_id, 'Tamamlandı')));
-    setLocalTasks(prev => prev.map(t => t.status === 'Onay Bekliyor' ? { ...t, status: 'Tamamlandı' } : t));
+    setLocalTasks(prev => prev.map(t => isPendingApproval(t) ? { ...t, status: 'Tamamlandı' } : t));
     showToast('✅ Tüm aksiyonlar onaylandı', 'success');
     pushDashNote('✅ Tüm bekleyen aksiyonlar onaylandı.');
   }

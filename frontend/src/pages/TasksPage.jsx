@@ -11,6 +11,7 @@ const TYPE_CLS = {
   Stok: 'orange',
   Kargo: 'blue',
 };
+const isPendingApproval = (task) => task.status?.toLocaleLowerCase('tr') === 'onay bekliyor';
 
 export default function TasksPage() {
   const { tasks, refresh } = useApiData();
@@ -23,7 +24,7 @@ export default function TasksPage() {
   useEffect(() => { setLocalTasks(tasks); }, [tasks]);
 
   const rows = localTasks.filter(t =>
-    (!filterStatus || t.status === filterStatus) &&
+    (!filterStatus || t.status?.toLocaleLowerCase('tr') === filterStatus.toLocaleLowerCase('tr')) &&
     (!filterType || t.task_type === filterType) &&
     (!filterPri || t.priority === filterPri)
   );
@@ -45,7 +46,7 @@ export default function TasksPage() {
             <option value="">Tüm Durumlar</option>
             <option value="Bekliyor">Bekliyor</option>
             <option value="Devam Ediyor">Devam Ediyor</option>
-            <option value="Onay Bekliyor">Onay Bekliyor</option>
+            <option value="Onay bekliyor">Onay bekliyor</option>
             <option value="Tamamlandı">Tamamlandı</option>
           </select>
           <select value={filterType} onChange={e => setFilterType(e.target.value)}>
@@ -84,7 +85,7 @@ export default function TasksPage() {
                     <td><PriorityChip priority={t.priority} /></td>
                     <td><Badge label={t.status} /></td>
                     <td>
-                      {t.status === 'Onay Bekliyor'
+                      {isPendingApproval(t)
                         ? <button className="btn btn-purple btn-sm" onClick={() => handleApprove(t.task_id)}>✓ Onayla</button>
                         : <button className="btn btn-ghost btn-sm" onClick={() => showToast(`Görev #${t.task_id} — ${t.status}`, 'info')}>→</button>}
                     </td>
