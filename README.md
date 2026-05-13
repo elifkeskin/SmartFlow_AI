@@ -168,5 +168,6 @@ cd backend
 - Rate limiting
 - Production deployment
 
-  <img width="1013" height="346" alt="SmartflowAI2" src="https://github.com/user-attachments/assets/3c54e1ce-7b3d-4d50-b713-b89536176858" />
+  <img width="847" height="65" alt="Kapanış" src="https://github.com/user-attachments/assets/efe9fc08-6488-45d9-910d-f449f2e97a8c" />
+
 
