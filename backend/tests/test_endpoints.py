@@ -89,6 +89,31 @@ def test_dashboard_summary(client):
     assert s["pending_tasks"] == 2
 
 
+def test_generate_daily_briefing_endpoint(client):
+    client.post("/api/seed")
+    r = client.post("/api/tasks/generate")
+    assert r.status_code == 200
+    body = r.json()
+    assert "Bugünkü Operasyon Özeti" in body["briefing"]
+    assert "generate_daily_briefing" in body["tool_calls"]
+    assert body["data"]["summary"]["total_orders"] == 12
+
+
+def test_chat_fallback_uses_tools_and_persists_message(client):
+    client.post("/api/seed")
+    r = client.post("/api/chat", json={"message": "142 numaralı siparişim neden gelmedi?"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["intent"] == "CARGO_STATUS"
+    assert body["entities"]["order_id"] == 142
+    assert body["tool_calls"] == ["get_order_status", "get_cargo_status"]
+    assert "2 günlük gecikme" in body["reply"]
+
+    messages = client.get("/api/messages").json()
+    assert len(messages) == 1
+    assert messages[0]["intent"] == "CARGO_STATUS"
+
+
 def test_list_messages_empty(client):
     client.post("/api/seed")
     r = client.get("/api/messages")

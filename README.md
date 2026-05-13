@@ -1,36 +1,85 @@
 # SmartFlow AI
 
-KOBİ ve kooperatifler için FastAPI + Gemini tabanlı yapay zeka operasyon asistanı.
+KOBİ ve üretici kooperatifleri için FastAPI + Gemini tabanlı, tool/function calling kullanan yapay zeka operasyon asistanı.
 
-## Proje Yapısı
+## Problem Tanımı
 
+Küçük işletmeler müşteri mesajlarını, sipariş durumlarını, kargo takibini, stok uyarılarını ve günlük görevleri çoğu zaman ayrı araçlarla ve manuel olarak yönetir. Bu durum geciken cevaplara, stok tükenmelerinin geç fark edilmesine, kargo gecikmelerinin müşteriden önce görülememesine ve operasyonel verimsizliğe yol açar.
+
+## Çözüm Özeti
+
+SmartFlow AI müşteri mesajını anlar, sipariş/ürün/kargo/stok verisini tool çağrılarıyla sorgular, müşteriye veri destekli cevap üretir ve yönetici panelinde gecikme, kritik stok, tedarikçi mail taslağı ve günlük görevleri görünür hale getirir.
+
+## Kapsanan Case'ler
+
+| Case | Karşılığı |
+|---|---|
+| Case 1 - Müşteri İletişiminin Otomasyonu | `/api/chat` müşteri mesajını intent/entity olarak işler ve cevap üretir. |
+| Case 2 - Ürün ve Sipariş Takibi | Sipariş, ürün ve özet dashboard endpointleri hazırdır. |
+| Case 3 - Kargo Süreçlerinin Yönetimi | Gecikmiş kargo tespit edilir, müşteri/yönetici uyarısı üretilir. |
+| Case 4 - Stok ve Envanter Yönetimi | Kritik stoklar belirlenir, tedarikçi mail taslağı gösterilir. |
+| Case 5 - İş Akışı ve Görev Yönetimi | `/api/tasks/generate` günlük operasyon brifingi ve görev özeti üretir. |
+
+## Kapsam Dışı
+
+Case 6 analitik/tahmin, gerçek WhatsApp API, gerçek kargo API, ödeme/muhasebe entegrasyonu, rota optimizasyonu, Pinecone/ChromaDB ve multi-agent yapı MVP kapsamı dışındadır. MVP tek ajan + yapısal veri sorgulama + stabil demo yaklaşımını izler.
+
+## Yapay Zeka Yaklaşımı
+
+- Gemini API ile tek merkezi AI ajanı kullanılır.
+- Intent classification: `ORDER_STATUS`, `PRODUCT_INFO`, `CARGO_STATUS`, `STOCK_ALERT`, `DAILY_BRIEFING`, `GENERAL`.
+- Entity extraction: sipariş numarası ve ürün adı çıkarılır.
+- Tool calling: `get_order_status`, `get_product_info`, `get_cargo_status`, `check_stock_alerts`, `draft_supplier_email`, `generate_daily_briefing`, `send_manager_alert`.
+- Gemini ana akıştır; API anahtarı yoksa demo kırılmasın diye aynı tool fonksiyonlarını kullanan deterministic fallback çalışır.
+
+## Sistem Mimarisi
+
+```text
+Müşteri Chat / Yönetici Dashboard
+        |
+      FastAPI
+        |
+ Gemini AI Agent + Tool Dispatcher
+        |
+ SQLAlchemy / SQLite
+        |
+ Orders, Products, Shipments, Tasks, Messages
 ```
-SmartFlow_AI/
-├── backend/          # FastAPI uygulaması (Python)
-│   ├── app/          # Uygulama kaynak kodu
-│   ├── tests/        # Pytest testleri
-│   ├── requirements.txt
-│   └── .env.example
-├── frontend/         # Vite + React SPA (Kişi 3 & 4)
-│   ├── src/
-│   │   ├── pages/    # Dashboard, Orders, Shipments, Products, Tasks, Pending, Chat
-│   │   ├── components/ # Layout, Badge, StatCard, StockBar, PriorityChip
-│   │   ├── hooks/    # useApiData (DataProvider + context)
-│   │   ├── api/      # client.js — tüm fetch helper'ları
-│   │   └── styles/   # theme.css, global.css
-│   ├── package.json
-│   └── vite.config.js (proxy: /api → http://127.0.0.1:8000)
-└── docs/             # Proje dokümanları
-```
 
-## Docker ile Çalıştırma (Önerilen)
+## Veri Modeli
+
+Temel tablolar:
+
+- `orders`: sipariş, müşteri, ürün, durum ve tahmini teslimat bilgisi
+- `products`: ürün, stok, kritik eşik, tedarikçi ve fiyat bilgisi
+- `shipments`: kargo firması, takip no, konum, gecikme günü ve ETA
+- `tasks`: operasyon görevleri, öncelik, durum ve ilişkili sipariş/ürün
+- `messages`: müşteri mesajı, AI cevabı, intent ve durum
+
+## API Endpointleri
+
+| Method | Path | Açıklama |
+|---|---|---|
+| GET | `/health` | Sağlık kontrolü |
+| POST | `/api/seed` | Demo verisini sıfırlar |
+| GET | `/api/orders` | Tüm siparişleri listeler |
+| GET | `/api/orders/{order_id}` | Tek sipariş detayı |
+| GET | `/api/products` | Tüm ürünleri listeler |
+| GET | `/api/shipments` | Tüm kargo kayıtlarını listeler |
+| GET | `/api/tasks` | Günlük görevleri listeler |
+| PATCH | `/api/tasks/{task_id}` | Görev durumunu günceller |
+| POST | `/api/tasks/generate` | AI günlük operasyon brifingi üretir |
+| GET | `/api/dashboard/summary` | Yönetici paneli özetini getirir |
+| GET | `/api/messages` | Chat mesaj geçmişini listeler |
+| POST | `/api/chat` | AI müşteri chat cevabı üretir |
+| POST | `/api/alerts/send` | Yönetici e-posta uyarısı gönderir |
+
+## Kurulum
+
+### Docker ile
 
 ```powershell
-# 1. .env dosyasını oluştur
 copy backend\.env.example backend\.env
-# backend\.env dosyasını düzenle: GEMINI_API_KEY, RESEND_API_KEY, MANAGER_EMAIL
-
-# 2. Build ve başlat
 docker compose up --build
 ```
 
@@ -48,44 +97,16 @@ docker compose down
 docker compose down -v
 ```
 
----
-
-## Yerel Geliştirme Kurulumu
-
 ```powershell
 cd backend
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 copy .env.example .env
-# .env dosyasını düzenle: GEMINI_API_KEY, RESEND_API_KEY
-```
-
-## Çalıştırma
-
-### Backend
-
-```powershell
-cd backend
-.venv\Scripts\Activate.ps1
 uvicorn app.main:app --reload
 ```
 
-API ayağa kalktıktan sonra:
-
-- Swagger UI: http://127.0.0.1:8000/docs
-- ReDoc: http://127.0.0.1:8000/redoc
-- Health: http://127.0.0.1:8000/health
-
-Demo verisini yüklemek için (backend ilk açılışta otomatik seed yapar):
-
-```powershell
-curl -X POST http://127.0.0.1:8000/api/seed
-```
-
-### Frontend
-
-Ayrı bir terminalde:
+Ayrı terminal:
 
 ```powershell
 cd frontend
@@ -93,64 +114,51 @@ npm install
 npm run dev
 ```
 
-Uygulama: http://localhost:5173
+Frontend: http://localhost:5173
 
-Vite proxy sayesinde `/api/*` istekleri otomatik olarak `http://127.0.0.1:8000`'a yönlendirilir — CORS ayarı gerekmez.
+Statik MVP dosyaları da hazırdır:
+
+- `frontend/chat.html`
+- `frontend/dashboard.html`
+
+## Demo Senaryosu
+
+1. `128 numaralı siparişim nerede?`
+2. `142 numaralı siparişim neden gelmedi?`
+3. `Organik zeytinyağı var mı?`
+4. Kritik stok uyarısını ve tedarikçi mail taslağını göster.
+5. `/api/tasks/generate` ile günlük operasyon brifingini yenile.
+
+## Kullanılan Teknolojiler
+
+- Backend: FastAPI, Python, SQLAlchemy, SQLite, Pydantic
+- AI: Gemini API, function/tool calling, tool destekli fallback
+- Harici servis: Resend API
+- Frontend teslimleri: HTML + Tailwind CDN + Vanilla JS
+- Ek yönetici arayüzü: Vite + React SPA
+- Kod paylaşımı ve çalıştırma: GitHub, Docker Compose
+
+## Takım Görev Dağılımı
+
+| Kişi | Sorumluluk |
+|---|---|
+| Kişi 1 | Backend altyapı, DB, CRUD, dashboard servisi ve read-only endpointler |
+| Kişi 2 | Gemini entegrasyonu, tool calling, `/api/chat`, `/api/tasks/generate`, `/api/alerts/send` |
+| Kişi 3 | `frontend/chat.html` ve React chat ekranı |
+| Kişi 4 | `frontend/dashboard.html`, React dashboard ve yönetici aksiyonları |
 
 ## Testler
 
 ```powershell
 cd backend
-pytest
+.venv\Scripts\python.exe -m pytest
 ```
-
-## Endpoint Listesi
-
-| Method | Path | Açıklama |
-|---|---|---|
-| GET | `/health` | Servis sağlık kontrolü |
-| POST | `/api/seed` | Demo verisini sıfırla ve yükle |
-| GET | `/api/orders` | Tüm siparişleri listele |
-| GET | `/api/orders/{order_id}` | Tek sipariş detayı |
-| GET | `/api/products` | Tüm ürünleri listele |
-| GET | `/api/shipments` | Tüm kargo kayıtlarını listele |
-| GET | `/api/tasks` | Tüm görevleri listele |
-| GET | `/api/dashboard/summary` | Yönetici paneli özeti |
-| POST | `/api/chat` | AI chat (Kişi 2) |
-| PATCH | `/api/tasks/{id}` | Görev durumunu güncelle (onay/red) |
-| GET | `/api/messages` | Chat mesaj geçmişi |
-| POST | `/api/ai/tasks/generate` | AI günlük brifing (Gemini) |
-| POST | `/api/alerts/send` | Yönetici uyarı maili |
-
-## Ekip İş Bölümü
-
-| Kişi | Sorumluluk |
-|---|---|
-| Kişi 1 | Backend altyapı, DB, CRUD, dashboard servisi, read-only endpoint'ler |
-| Kişi 2 | Gemini AI entegrasyonu, tool calling, `/api/chat`, `/api/tasks/generate`, `/api/alerts/send` |
-| Kişi 3 | `frontend/src/pages/ChatPage.jsx` — müşteri chat arayüzü |
-| Kişi 4 | `frontend/src/pages/DashboardPage.jsx` ve diğer sayfalar — yönetici paneli |
-
-## Teknoloji Yığını
-
-- **Backend**: FastAPI + Python 3.11+
-- **AI**: Gemini API (google-generativeai)
-- **DB**: SQLite + SQLAlchemy 2.x
-- **Validation**: Pydantic v2
-- **E-posta**: Resend API
-- **Frontend**: Vite + React 18 + react-router-dom v6 + Chart.js 4 + react-chartjs-2
-
-## Notlar
-
-- CORS `*` olarak açık (MVP). Production'da daraltılmalı.
-- `POST /api/seed` sadece demo/geliştirme ortamında kullanılır.
-- `.env` dosyası asla git'e eklenmemelidir.
 
 ## Future Work
 
 - Case 6: Analitik ve içgörü üretimi
-- Gerçek WhatsApp Business API entegrasyonu
-- Gerçek kargo firması API entegrasyonu
+- Gerçek WhatsApp Business API
+- Gerçek kargo firması API
 - Kullanıcı yetkilendirme
 - Rate limiting
 - Production deployment

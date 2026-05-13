@@ -6,6 +6,7 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "sqlite:///./smartflow.db"
     GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.5-flash"
     RESEND_API_KEY: str = ""
     RESEND_FROM_EMAIL: str = "noreply@smartflow.ai"
     MANAGER_EMAIL: str = ""
