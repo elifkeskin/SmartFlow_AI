@@ -49,7 +49,7 @@ def generate_tasks(db: Session = Depends(get_db)):
     if settings.GEMINI_API_KEY:
         try:
             genai.configure(api_key=settings.GEMINI_API_KEY)
-            model = genai.GenerativeModel("gemini-1.5-flash")
+            model = genai.GenerativeModel(settings.GEMINI_MODEL)
             prompt = f"""
 Aşağıdaki işletme verisine göre bugünkü operasyon brifingi yaz.
 Türkçe, madde madde, yönetici için kısa ve net olsun.

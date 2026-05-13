@@ -35,7 +35,7 @@ DB_TOOLS = {
 
 def _process_chat_real(message: str, db: Session) -> dict:
     model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
+        model_name=settings.GEMINI_MODEL,
         system_instruction=SYSTEM_PROMPT,
         tools=TOOL_DECLARATIONS,
     )
