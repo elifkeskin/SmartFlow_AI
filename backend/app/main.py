@@ -3,11 +3,20 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.config import settings
 from app.database import Base, SessionLocal, engine
 from app.models import Product
 from app.routers import dashboard, messages, orders, products, shipments, system, tasks
 from app.seed import run_seed
 from app.routers import chat, ai_tasks, alerts
+
+
+def _allowed_cors_origins() -> list[str]:
+    return [
+        origin.strip()
+        for origin in settings.CORS_ALLOWED_ORIGINS.split(",")
+        if origin.strip()
+    ]
 
 
 @asynccontextmanager
@@ -28,7 +37,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_allowed_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

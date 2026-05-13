@@ -28,6 +28,17 @@ def db():
         session.close()
 
 
+@pytest.fixture(autouse=True)
+def disable_external_ai(monkeypatch):
+    from app.config import settings
+    from app.routers import ai_tasks
+
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", "")
+    ai_tasks._briefing_cache.clear()
+    yield
+    ai_tasks._briefing_cache.clear()
+
+
 @pytest.fixture
 def client(db):
     def override_get_db():
