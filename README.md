@@ -11,8 +11,6 @@ An AI operations assistant for SMEs and producer cooperatives, built on FastAPI 
 
 **🔗 Live Demo:** [smartflow-frontend-production.up.railway.app](https://smartflow-frontend-production.up.railway.app/)
 
-<img width="1067" height="422" alt="SmartFlow_AI" src="https://github.com/user-attachments/assets/17980c50-805b-48a5-9324-b150ed1538e2" />
-
 ## Table of Contents
 
 - [Problem Statement](#problem-statement)
@@ -36,8 +34,6 @@ An AI operations assistant for SMEs and producer cooperatives, built on FastAPI 
 ## Problem Statement
 
 Small businesses typically manage customer messages, order statuses, shipment tracking, stock alerts, and daily tasks across separate tools and manual processes. This leads to delayed responses, late detection of stockouts, shipment delays that customers notice before the business does, and overall operational inefficiency.
-
-<img width="1013" height="346" alt="SmartflowAI2" src="https://github.com/user-attachments/assets/a506c8bd-a137-4965-b0e7-3503fabe3a89" />
 
 ## Solution Overview
 
@@ -274,4 +270,3 @@ cd backend
 
 This project is licensed under the [MIT License](LICENSE).
 
-<img width="847" height="65" alt="Closing" src="https://github.com/user-attachments/assets/efe9fc08-6488-45d9-910d-f449f2e97a8c" />
