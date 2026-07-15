@@ -230,7 +230,6 @@ Static MVP files are also available directly in `frontend/`:
 4. Show the critical stock alert and the supplier email draft.
 5. Refresh the daily operations briefing via `/api/tasks/generate`.
 
-> Sample messages are in Turkish, the app's primary target language — the AI understands and replies in Turkish.
 
 ## Tech Stack
 
