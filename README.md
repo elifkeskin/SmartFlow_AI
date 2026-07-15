@@ -1,46 +1,70 @@
 # SmartFlow AI
 
-KOBİ ve üretici kooperatifleri için FastAPI + Gemini tabanlı, tool/function calling kullanan yapay zeka operasyon asistanı.
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](backend/Dockerfile)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)](backend/requirements.txt)
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](frontend/package.json)
+[![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)](frontend/package.json)
+[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-D71F00)](backend/requirements.txt)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-<img width="1067" height="422" alt="SmartFlow_AI" src="https://github.com/user-attachments/assets/17980c50-805b-48a5-9324-b150ed1538e2" />
+An AI operations assistant for SMEs and producer cooperatives, built on FastAPI + Gemini with tool/function calling.
 
-## Problem Tanımı
+**🔗 Live Demo:** [smartflow-frontend-production.up.railway.app](https://smartflow-frontend-production.up.railway.app/)
 
-Küçük işletmeler müşteri mesajlarını, sipariş durumlarını, kargo takibini, stok uyarılarını ve günlük görevleri çoğu zaman ayrı araçlarla ve manuel olarak yönetir. Bu durum geciken cevaplara, stok tükenmelerinin geç fark edilmesine, kargo gecikmelerinin müşteriden önce görülememesine ve operasyonel verimsizliğe yol açar.
+## Table of Contents
 
-<img width="1013" height="346" alt="SmartflowAI2" src="https://github.com/user-attachments/assets/a506c8bd-a137-4965-b0e7-3503fabe3a89" />
+- [Problem Statement](#problem-statement)
+- [Solution Overview](#solution-overview)
+- [Covered Cases](#covered-cases)
+- [Out of Scope](#out-of-scope)
+- [AI Approach](#ai-approach)
+- [System Architecture](#system-architecture)
+- [Data Model](#data-model)
+- [API Endpoints](#api-endpoints)
+- [Environment Variables](#environment-variables)
+- [Project Structure](#project-structure)
+- [Setup](#setup)
+- [Demo Scenario](#demo-scenario)
+- [Tech Stack](#tech-stack)
+- [Team Responsibilities](#team-responsibilities)
+- [Tests](#tests)
+- [Future Work](#future-work)
+- [License](#license)
 
+## Problem Statement
 
-## Çözüm Özeti
+Small businesses typically manage customer messages, order statuses, shipment tracking, stock alerts, and daily tasks across separate tools and manual processes. This leads to delayed responses, late detection of stockouts, shipment delays that customers notice before the business does, and overall operational inefficiency.
 
-SmartFlow AI müşteri mesajını anlar, sipariş/ürün/kargo/stok verisini tool çağrılarıyla sorgular, müşteriye veri destekli cevap üretir ve yönetici panelinde gecikme, kritik stok, tedarikçi mail taslağı ve günlük görevleri görünür hale getirir.
+## Solution Overview
 
-## Kapsanan Case'ler
+SmartFlow AI understands customer messages, queries order/product/shipment/stock data through tool calls, generates data-backed replies to customers, and surfaces delays, critical stock, supplier email drafts, and daily tasks in an admin dashboard.
 
-| Case | Karşılığı |
+## Covered Cases
+
+| Case | Coverage |
 |---|---|
-| Case 1 - Müşteri İletişiminin Otomasyonu | `/api/chat` müşteri mesajını intent/entity olarak işler ve cevap üretir. |
-| Case 2 - Ürün ve Sipariş Takibi | Sipariş, ürün ve özet dashboard endpointleri hazırdır. |
-| Case 3 - Kargo Süreçlerinin Yönetimi | Gecikmiş kargo tespit edilir, müşteri/yönetici uyarısı üretilir. |
-| Case 4 - Stok ve Envanter Yönetimi | Kritik stoklar belirlenir, tedarikçi mail taslağı gösterilir. |
-| Case 5 - İş Akışı ve Görev Yönetimi | `/api/tasks/generate` günlük operasyon brifingi ve görev özeti üretir. |
+| Case 1 - Customer Communication Automation | `/api/chat` processes the customer message as intent/entity and generates a reply. |
+| Case 2 - Order & Product Tracking | Order, product, and summary dashboard endpoints are ready. |
+| Case 3 - Shipment Process Management | Delayed shipments are detected and customer/manager alerts are generated. |
+| Case 4 - Stock & Inventory Management | Critical stock levels are identified and supplier email drafts are shown. |
+| Case 5 - Workflow & Task Management | `/api/tasks/generate` produces a daily operations briefing and task summary. |
 
-## Kapsam Dışı
+## Out of Scope
 
-Case 6 analitik/tahmin, gerçek WhatsApp API, gerçek kargo API, ödeme/muhasebe entegrasyonu, rota optimizasyonu, Pinecone/ChromaDB ve multi-agent yapı MVP kapsamı dışındadır. MVP tek ajan + yapısal veri sorgulama + stabil demo yaklaşımını izler.
+Case 6 analytics/forecasting, a real WhatsApp API, a real shipping carrier API, payment/accounting integration, route optimization, Pinecone/ChromaDB, and a multi-agent architecture are out of scope for the MVP. The MVP follows a single-agent + structured data querying + stable demo approach.
 
-## Yapay Zeka Yaklaşımı
+## AI Approach
 
-- Gemini API ile tek merkezi AI ajanı kullanılır.
+- A single centralized AI agent powered by the Gemini API.
 - Intent classification: `ORDER_STATUS`, `PRODUCT_INFO`, `CARGO_STATUS`, `STOCK_ALERT`, `DAILY_BRIEFING`, `GENERAL`.
-- Entity extraction: sipariş numarası ve ürün adı çıkarılır.
+- Entity extraction: order number and product name are extracted.
 - Tool calling: `get_order_status`, `get_product_info`, `get_cargo_status`, `check_stock_alerts`, `draft_supplier_email`, `generate_daily_briefing`, `send_manager_alert`.
-- Gemini ana akıştır; API anahtarı yoksa demo kırılmasın diye aynı tool fonksiyonlarını kullanan deterministic fallback çalışır.
+- Gemini is the primary path; if no API key is set, a deterministic fallback using the same tool functions keeps the demo from breaking.
 
-## Sistem Mimarisi
+## System Architecture
 
 ```text
-Müşteri Chat / Yönetici Dashboard
+Customer Chat / Admin Dashboard
         |
       FastAPI
         |
@@ -51,56 +75,118 @@ Müşteri Chat / Yönetici Dashboard
  Orders, Products, Shipments, Tasks, Messages
 ```
 
-## Veri Modeli
+## Data Model
 
-Temel tablolar:
+Core tables:
 
-- `orders`: sipariş, müşteri, ürün, durum ve tahmini teslimat bilgisi
-- `products`: ürün, stok, kritik eşik, tedarikçi ve fiyat bilgisi
-- `shipments`: kargo firması, takip no, konum, gecikme günü ve ETA
-- `tasks`: operasyon görevleri, öncelik, durum ve ilişkili sipariş/ürün
-- `messages`: müşteri mesajı, AI cevabı, intent ve durum
+| Table | Contents |
+|---|---|
+| `orders` | Order, customer, product, status, and estimated delivery info |
+| `products` | Product, stock, critical threshold, supplier, and price info |
+| `shipments` | Carrier, tracking number, location, delay days, and ETA |
+| `tasks` | Operational tasks, priority, status, and related order/product |
+| `messages` | Customer message, AI reply, intent, and status |
 
-## API Endpointleri
+## API Endpoints
 
-| Method | Path | Açıklama |
+| Method | Path | Description |
 |---|---|---|
-| GET | `/health` | Sağlık kontrolü |
-| POST | `/api/seed` | Demo verisini sıfırlar |
-| GET | `/api/orders` | Tüm siparişleri listeler |
-| GET | `/api/orders/{order_id}` | Tek sipariş detayı |
-| GET | `/api/products` | Tüm ürünleri listeler |
-| GET | `/api/shipments` | Tüm kargo kayıtlarını listeler |
-| GET | `/api/tasks` | Günlük görevleri listeler |
-| PATCH | `/api/tasks/{task_id}` | Görev durumunu günceller |
-| POST | `/api/tasks/generate` | AI günlük operasyon brifingi üretir |
-| GET | `/api/dashboard/summary` | Yönetici paneli özetini getirir |
-| GET | `/api/messages` | Chat mesaj geçmişini listeler |
-| POST | `/api/chat` | AI müşteri chat cevabı üretir |
-| POST | `/api/alerts/send` | Yönetici e-posta uyarısı gönderir |
+| GET | `/health` | Health check |
+| POST | `/api/seed` | Resets demo data |
+| GET | `/api/orders` | Lists all orders |
+| GET | `/api/orders/{order_id}` | Single order detail |
+| GET | `/api/products` | Lists all products |
+| GET | `/api/shipments` | Lists all shipment records |
+| GET | `/api/tasks` | Lists daily tasks |
+| PATCH | `/api/tasks/{task_id}` | Updates task status |
+| POST | `/api/tasks/generate` | Generates AI daily operations briefing |
+| GET | `/api/dashboard/summary` | Retrieves the admin dashboard summary |
+| GET | `/api/messages` | Lists chat message history |
+| POST | `/api/chat` | Generates an AI customer chat reply |
+| POST | `/api/alerts/send` | Sends an admin email alert |
 
-## Kurulum
+## Environment Variables
 
-### Docker ile
+The backend reads the following variables from `backend/.env` (see `backend/.env.example`):
+
+| Variable | Description |
+|---|---|
+| `GEMINI_API_KEY` | Gemini API access key |
+| `GEMINI_MODEL` | Gemini model to use (default: `gemini-2.5-flash`) |
+| `RESEND_API_KEY` | API key for sending email via Resend |
+| `RESEND_FROM_EMAIL` | Sender email address |
+| `MANAGER_EMAIL` | Address that receives manager alerts |
+| `DATABASE_URL` | Database connection string (default: SQLite) |
+
+## Project Structure
+
+```text
+SmartFlow_AI/
+├── backend/
+│   ├── app/
+│   │   ├── routers/          # orders, products, shipments, tasks, messages, chat, alerts, ai_tasks, system
+│   │   ├── main.py            # FastAPI app + router include
+│   │   ├── crud.py            # DB queries (pure functions)
+│   │   ├── models.py          # SQLAlchemy models
+│   │   ├── schemas.py         # Pydantic schemas
+│   │   ├── ai_service.py      # Gemini integration / tool calling
+│   │   ├── tools.py           # AI tool functions
+│   │   ├── dashboard_service.py
+│   │   ├── email_service.py   # Resend integration
+│   │   ├── seed.py             # Demo data generation
+│   │   ├── config.py
+│   │   └── database.py
+│   ├── tests/                 # pytest test suite
+│   ├── requirements.txt
+│   └── Dockerfile
+├── frontend/
+│   ├── src/
+│   │   ├── pages/              # Dashboard, Orders, Products, Shipments, Tasks, Chat
+│   │   ├── components/         # Badge, Layout, StatCard, StockBar, PriorityChip
+│   │   ├── hooks/useApiData.jsx
+│   │   ├── api/client.js
+│   │   └── App.jsx / main.jsx
+│   ├── chat.html               # Static MVP chat UI
+│   ├── dashboard.html          # Static MVP dashboard UI
+│   ├── package.json
+│   └── Dockerfile
+├── docs/                       # Architecture, data model, demo script, pitch deck
+├── docker-compose.yml
+├── LICENSE
+└── README.md
+```
+
+## Setup
+
+> **Want a quick look without setting anything up? Try the live demo:** [smartflow-frontend-production.up.railway.app](https://smartflow-frontend-production.up.railway.app/)
+
+### Prerequisites
+
+- Python 3.11+
+- Node.js 18+ and npm
+- Docker Desktop (only if you're using the Docker setup)
+
+### With Docker
 
 ```powershell
 copy backend\.env.example backend\.env
 docker compose up --build
 ```
 
-Uygulama: http://localhost:8080
-
 - Frontend (Nginx): http://localhost:8080
 - Backend API: http://localhost:8080/api
-- Swagger UI: http://127.0.0.1:8000/docs (backend container'ını ayrıca expose etmek için `docker compose up` sırasında port eklenebilir)
 
-Durdurmak için:
+To stop:
 
 ```powershell
 docker compose down
-# Veritabanını da silmek için:
+# To also remove the database:
 docker compose down -v
 ```
+
+### Manual Setup
+
+Backend:
 
 ```powershell
 cd backend
@@ -111,7 +197,16 @@ copy .env.example .env
 uvicorn app.main:app --reload
 ```
 
-Ayrı terminal:
+- API: http://127.0.0.1:8000
+- Swagger UI: http://127.0.0.1:8000/docs
+
+Load demo data (with the server running):
+
+```powershell
+curl -X POST http://127.0.0.1:8000/api/seed
+```
+
+In a separate terminal, frontend:
 
 ```powershell
 cd frontend
@@ -119,40 +214,43 @@ npm install
 npm run dev
 ```
 
-Frontend: http://localhost:5173
+- Frontend: http://localhost:5173
 
-Statik MVP dosyaları da hazırdır:
+Static MVP files are also available directly in `frontend/`:
 
 - `frontend/chat.html`
 - `frontend/dashboard.html`
 
-## Demo Senaryosu
 
-1. `128 numaralı siparişim nerede?`
-2. `142 numaralı siparişim neden gelmedi?`
-3. `Organik zeytinyağı var mı?`
-4. Kritik stok uyarısını ve tedarikçi mail taslağını göster.
-5. `/api/tasks/generate` ile günlük operasyon brifingini yenile.
+## Demo Scenario
 
-## Kullanılan Teknolojiler
+1. `128 numaralı siparişim nerede?` ("Where is my order #128?")
+2. `142 numaralı siparişim neden gelmedi?` ("Why hasn't my order #142 arrived?")
+3. `Organik zeytinyağı var mı?` ("Do you have organic olive oil in stock?")
+4. Show the critical stock alert and the supplier email draft.
+5. Refresh the daily operations briefing via `/api/tasks/generate`.
 
-- Backend: FastAPI, Python, SQLAlchemy, SQLite, Pydantic
-- AI: Gemini API, function/tool calling, tool destekli fallback
-- Harici servis: Resend API
-- Frontend teslimleri: HTML + Tailwind CDN + Vanilla JS
-- Ek yönetici arayüzü: Vite + React SPA
-- Kod paylaşımı ve çalıştırma: GitHub, Docker Compose
+> Sample messages are in Turkish, the app's primary target language — the AI understands and replies in Turkish.
 
-## Takım Görev Dağılımı
+## Tech Stack
 
-| Kişi | Sorumluluk |
+- **Backend:** FastAPI, Python, SQLAlchemy, SQLite, Pydantic
+- **AI:** Gemini API, function/tool calling, tool-backed fallback
+- **External service:** Resend API
+- **Frontend deliverables:** HTML + Tailwind CDN + Vanilla JS
+- **Additional admin UI:** Vite + React SPA
+- **Code sharing & runtime:** GitHub, Docker Compose
+
+## Team Responsibilities
+
+| Member | Responsibility |
 |---|---|
-| Kişi 1 | Backend altyapı, DB, CRUD, dashboard servisi ve read-only endpointler |
-| Kişi 2 | Gemini entegrasyonu, tool calling, `/api/chat`, `/api/tasks/generate`, `/api/alerts/send` |
-| Kişi 3 | `frontend/chat.html` ve React chat ekranı |
-| Kişi 4 | `frontend/dashboard.html`, React dashboard ve yönetici aksiyonları |
+| Member 1 | Backend infrastructure, DB, CRUD, dashboard service, and read-only endpoints |
+| Member 2 | Gemini integration, tool calling, `/api/chat`, `/api/tasks/generate`, `/api/alerts/send` |
+| Member 3 | `frontend/chat.html` and the React chat screen |
+| Member 4 | `frontend/dashboard.html`, React dashboard, and admin actions |
 
-## Testler
+## Tests
 
 ```powershell
 cd backend
@@ -161,13 +259,14 @@ cd backend
 
 ## Future Work
 
-- Case 6: Analitik ve içgörü üretimi
-- Gerçek WhatsApp Business API
-- Gerçek kargo firması API
-- Kullanıcı yetkilendirme
+- Case 6: Analytics and insight generation
+- Real WhatsApp Business API
+- Real shipping carrier API
+- User authentication
 - Rate limiting
 - Production deployment
 
-  <img width="847" height="65" alt="Kapanış" src="https://github.com/user-attachments/assets/efe9fc08-6488-45d9-910d-f449f2e97a8c" />
+## License
 
+This project is licensed under the [MIT License](LICENSE).
 
