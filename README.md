@@ -164,6 +164,12 @@ SmartFlow_AI/
 
 > **Want a quick look without setting anything up? Try the live demo:** [smartflow-frontend-production.up.railway.app](https://smartflow-frontend-production.up.railway.app/)
 
+### Prerequisites
+
+- Python 3.11+
+- Node.js 18+ and npm
+- Docker Desktop (only if you're using the Docker setup)
+
 ### With Docker
 
 ```powershell
@@ -171,11 +177,8 @@ copy backend\.env.example backend\.env
 docker compose up --build
 ```
 
-App: http://localhost:8080
-
 - Frontend (Nginx): http://localhost:8080
 - Backend API: http://localhost:8080/api
-- Swagger UI: http://127.0.0.1:8000/docs (expose the backend container's port separately during `docker compose up` if you need this)
 
 To stop:
 
@@ -198,6 +201,15 @@ copy .env.example .env
 uvicorn app.main:app --reload
 ```
 
+- API: http://127.0.0.1:8000
+- Swagger UI: http://127.0.0.1:8000/docs
+
+Load demo data (with the server running):
+
+```powershell
+curl -X POST http://127.0.0.1:8000/api/seed
+```
+
 In a separate terminal, frontend:
 
 ```powershell
@@ -206,12 +218,13 @@ npm install
 npm run dev
 ```
 
-Frontend: http://localhost:5173
+- Frontend: http://localhost:5173
 
-Static MVP files are also available:
+Static MVP files are also available directly in `frontend/`:
 
 - `frontend/chat.html`
 - `frontend/dashboard.html`
+
 
 ## Demo Scenario
 
